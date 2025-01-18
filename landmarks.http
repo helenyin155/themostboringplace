@@ -1,0 +1,48 @@
+### Environment Variables
+@baseUrl = http://localhost:3000
+
+### Test 1: Get Nearby Landmarks (Valid Coordinates - New York City)
+GET {{baseUrl}}/api/nearby-landmarks?latitude=40.7128&longitude=-74.0060
+Content-Type: application/json
+
+### Test 2: Get Nearby Landmarks (Valid Coordinates - London)
+GET {{baseUrl}}/api/nearby-landmarks?latitude=51.5074&longitude=-0.1278
+Content-Type: application/json
+
+### Test 3: Invalid Request - Missing Coordinates
+GET {{baseUrl}}/api/nearby-landmarks
+Content-Type: application/json
+
+### Test 4: Invalid Request - Bad Latitude
+GET {{baseUrl}}/api/nearby-landmarks?latitude=91&longitude=-74.0060
+Content-Type: application/json
+
+### Test 5: Invalid Request - Bad Longitude
+GET {{baseUrl}}/api/nearby-landmarks?latitude=40.7128&longitude=181
+Content-Type: application/json
+
+### Test 6: Get Nearby Landmarks with Response Testing
+GET {{baseUrl}}/api/nearby-landmarks?latitude=40.7128&longitude=-74.0060
+Content-Type: application/json
+
+> {%
+    client.test("Request executed successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+
+    client.test("Response has correct structure", function() {
+        const body = response.body;
+        client.assert(body.hasOwnProperty('total'), "Missing total property");
+        client.assert(Array.isArray(body.places), "Places should be an array");
+    });
+
+    client.test("Places have required properties", function() {
+        if (response.body.places.length > 0) {
+            const place = response.body.places[0];
+            client.assert(place.hasOwnProperty('name'), "Missing name property");
+            client.assert(place.hasOwnProperty('types'), "Missing types property");
+            client.assert(place.hasOwnProperty('address'), "Missing address property");
+            client.assert(place.hasOwnProperty('location'), "Missing location property");
+        }
+    });
+%}
