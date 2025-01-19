@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import MapComponent from './MapComponents';
+import BoringScoreSound from './BoringScoreSound';
 
 const BoringMap = () => {
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -87,6 +88,7 @@ const BoringMap = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-2 bg-gray-100 rounded-lg h-[600px] relative">
           <MapComponent onLocationSelect={handleLocationSelect} />
+          {boringData?.areaStats && <BoringScoreSound boringScore={boringData.areaStats.totalBoringScore} />}
           {selectedLocation && (
             <div className="absolute top-2 right-2 bg-white p-2 rounded shadow">
               {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}

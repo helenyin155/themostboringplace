@@ -99,7 +99,7 @@ async function fetchNearbyLandmarks(latitude, longitude) {
         const totalInterestingScore = allPlaces.reduce((sum, place) => sum +  (100 - place.boringScore), 0)/60;
 
         // Calculate area's total boring score
-        var totalBoringScore = 100 - totalInterestingScore;
+        const totalBoringScore = 100 - totalInterestingScore;
 
         if (allPlaces.length == 0) {
             totalBoringScore = 100;
