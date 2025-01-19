@@ -13,133 +13,202 @@ const BoringMap = () => {
     setError(null);
     try {
       const url = `${process.env.REACT_APP_API_URL}/nearby-places?latitude=${lat}&longitude=${lng}`;
-      console.log('Attempting to fetch from:', url);
-      
       const response = await fetch(url);
-      console.log('Response status:', response.status);
-      
       const data = await response.json();
-      console.log('Response data:', data);
+
+      // If no landmarks found, set boring score to infinity
+      if (!data.landmarks || data.landmarks.length === 0) {
+        data.areaStats = {
+          ...data.areaStats,
+          totalBoringScore: Infinity,
+          numPlaces: 0,
+          averageDistance: 0
+        };
+      }
 
       setBoringData(data);
       setSelectedLocation({ lat, lng });
     } catch (err) {
-      console.error('Fetch error:', err);
       setError(`Failed to fetch: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const getBoringScoreColor = (score) => {
-    const normalizedScore = Math.min(score / 45, 1);
-    if (normalizedScore < 0.2) return 'bg-red-500';
-    if (normalizedScore < 0.4) return 'bg-orange-500';
-    if (normalizedScore < 0.6) return 'bg-yellow-500';
-    if (normalizedScore < 0.8) return 'bg-blue-400';
-    return 'bg-blue-600';
+  const getProgressBarColor = (score) => {
+    if (score > 80) return '#EF4444'; // red-500
+    if (score > 60) return '#F97316'; // orange-500
+    if (score > 40) return '#EAB308'; // yellow-500
+    if (score > 20) return '#22C55E'; // green-500
+    return '#16A34A'; // green-600
+  };
+
+  const renderProgressBar = (score, max = 100) => {
+    const width = (score / max) * 100;
+    const color = getProgressBarColor(score);
+    return (
+      <div className="w-40 h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div 
+          className="h-full rounded-full"
+          style={{ 
+            width: `${width}%`,
+            background: `repeating-linear-gradient(45deg,${color},${color} 10px,${adjustColorBrightness(color, -20)} 10px,${adjustColorBrightness(color, -20)} 20px)`
+          }}
+        />
+      </div>
+    );
+  };
+
+  // Helper function to darken/lighten color for stripes
+  const adjustColorBrightness = (color, amount) => {
+    const hex = color.replace('#', '');
+    const r = Math.max(0, Math.min(255, parseInt(hex.substring(0, 2), 16) + amount));
+    const g = Math.max(0, Math.min(255, parseInt(hex.substring(2, 4), 16) + amount));
+    const b = Math.max(0, Math.min(255, parseInt(hex.substring(4, 6), 16) + amount));
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   };
 
   const renderPlacesList = () => {
-    if (!boringData?.landmarks) {
-        return (
-            <div className="p-4 text-center">
-                <p className="text-gray-600">
-                    No interesting places found in this area.
-                    This might be the most boring place ever!
-                </p>
-            </div>
-        );
-    }
-    else {
-        return boringData.landmarks.map((place, index) => (
-            <div key={index} className="p-3 bg-white rounded-lg shadow mb-2">
-              <p className="font-medium text-gray-900">{place.name}</p>
-              <div className="flex items-center space-x-2 text-sm mt-1">
-                <div 
-                  className={`h-2 w-16 rounded ${getBoringScoreColor(place.boringScore)}`}
-                />
-                <span className="text-gray-600">
-                  {place.boringScore.toFixed(1)} boring score
-                </span>
-              </div>
-              <div className="text-sm text-gray-500 mt-1">
-                <p className="line-clamp-1">{place.address}</p>
-                <p>{place.distanceFromUser.toFixed(1)}km away</p>
-              </div>
-            </div>
-          ));
-        };
+    if (!boringData?.landmarks || boringData.landmarks.length === 0) {
+      return (
+        <div className="bg-white rounded-[24px] p-6 mb-4">
+          <p className="text-lg mb-3">literally nothing. this might be the most boring place on earth</p>
+        </div>
+      );
     }
 
+    return boringData.landmarks.map((place, index) => (
+      <div key={index} className="bg-white rounded-[24px] p-6 mb-4">
+        <h3 className="text-lg font-bold mb-3">{place.name}</h3>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-32 h-1 bg-gray-200 rounded-full">
+          <div 
+            className="h-full rounded-full"
+            style={{
+              width: `${(place.boringScore / 100) * 100}%`,
+              backgroundColor: getProgressBarColor(place.boringScore),
+            }}
+          />
+
+          </div>
+          <span className="text-sm text-gray-600">
+            {place.boringScore.toFixed(1)} boringness
+          </span>
+        </div>
+        <p className="text-sm text-gray-600 mb-1">{place.address}</p>
+        <p className="text-sm text-gray-600">{place.distanceFromUser.toFixed(1)}km away</p>
+      </div>
+    ));
+  };
+
   return (
-    <div className="w-full max-w-6xl mx-auto p-4">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold mb-2">The Most Boring Place on Earth</h1>
-        <p className="text-gray-600">click anywhere on the map to check its boring score!</p>
+    <div className="max-w-6xl mx-auto px-4 py-8 font-ibm-plex relative">
+      {/* Close Button */}
+      <button
+        onClick={() => console.log('Close button clicked!')}
+        className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300 transition"
+        aria-label="Close"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-gray-700"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold mb-2 font-balsamiq">how boring is my location?</h1>
+        <p className="text-gray-600">click anywhere on the map to find out</p>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl mb-6">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 bg-gray-100 rounded-lg h-[600px] relative">
-          <MapComponent onLocationSelect={handleLocationSelect} />
-          {boringData?.areaStats && <BoringScoreSound boringScore={boringData.areaStats.totalBoringScore} />}
-          {selectedLocation && (
-            <div className="absolute top-2 right-2 bg-white p-2 rounded shadow">
-              {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}
-            </div>
-          )}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+        {/* Left Column: Map and Area Statistics */}
+        <div className="space-y-8 md:col-span-8">
+          <div className="bg-gray-50 rounded-2xl h-[600px] relative">
+            <MapComponent onLocationSelect={handleLocationSelect} />
+            {boringData?.areaStats && (
+              <BoringScoreSound boringScore={boringData.areaStats.totalBoringScore} />
+            )}
+            {selectedLocation && (
+              <div className="absolute top-4 right-4 bg-white px-4 py-2 rounded-xl shadow-sm">
+                {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-[32px] p-8 border-2 border-black shadow-[8px_8px_0_0_#000000]">
+            {loading ? (
+              <h2 className="text-xl font-semibold">calculating boringness...</h2>
+            ) : boringData ? (
+              <>
+                <h2 className="text-2xl font-semibold mb-6">
+                  {boringData.areaStats.totalBoringScore > 50 
+                    ? "womp womp! this place is boring... 😴😴"
+                    : boringData.areaStats.totalBoringScore > 30
+                      ? "meh, it's okay i guess 🤷‍♂️"
+                      : "hooray! this place looks fun! 🎉"
+                  }
+                </h2>
+                <div className="mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-full h-8 bg-gray-100 rounded-lg overflow-hidden">
+                    <div
+                      className="h-full"
+                      style={{
+                        width: `${boringData.areaStats.totalBoringScore}%`,
+                        background: `repeating-linear-gradient(45deg, ${getProgressBarColor(
+                          boringData.areaStats.totalBoringScore
+                        )}, ${getProgressBarColor(boringData.areaStats.totalBoringScore)} 10px, #FFFFFF 10px, #FFFFFF 20px)`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-lg whitespace-nowrap">
+                    {boringData.areaStats.totalBoringScore.toFixed(1)} boringness
+                  </span>
+                </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Places found</p>
+                    <p className="text-xl font-semibold">{boringData.areaStats.numPlaces}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Average distance</p>
+                    <p className="text-xl font-semibold">{boringData.areaStats.averageDistance.toFixed(1)}km</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <h2 className="text-xl font-semibold">Click on the map!!</h2>
+            )}
+          </div>
         </div>
 
-        <div className="space-y-4 h-[600px] flex flex-col">
+                  {/* Right Column: Scrollable Places List */}
+        <div className="md:col-span-4 pt-2">
           {loading ? (
-            <div className="p-4 bg-white rounded-lg shadow">
-              <p>are you bored...</p>
+            <div className="text-center py-8">
+              <p className="text-gray-600">calculating boringness...</p>
             </div>
-          ) : boringData ? (
-            <>
-              <div className="p-4 bg-white rounded-lg shadow">
-                <h2 className="text-lg font-semibold mb-2">Area Statistics</h2>
-                <div className="space-y-2">
-                  {boringData.areaStats && (
-                    <>
-                      <div>
-                        <p className="text-sm text-gray-600">Area Boring Score</p>
-                        <div className="flex items-center space-x-2">
-                          <div 
-                            className={`h-4 w-full rounded ${getBoringScoreColor(boringData.areaStats.totalBoringScore)}`}
-                          />
-                          <span className="font-mono">
-                            {boringData.areaStats.totalBoringScore.toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
-                      <p>Places found: {boringData.areaStats.numPlaces}</p>
-                      <p>Average distance: {boringData.areaStats.averageDistance.toFixed(1)}km</p>
-                    </>
-                  )}
-                </div>
+          ) : (boringData && boringData.areaStats) ? (
+            <div>
+              <h2 className="text-xl font-bold mb-4">Most interesting places near me</h2>
+              <div className="overflow-y-auto" style={{ height: 'calc(100vh - 220px)' }}>
+                {renderPlacesList()}
               </div>
-
-              <div className="flex-1 bg-white rounded-lg shadow flex flex-col min-h-0">
-                <div className="p-4 border-b">
-                  <h2 className="text-lg font-semibold">most interest places :(</h2>
-                </div>
-                <div className="p-2 flex-1 overflow-y-auto bg-gray-50">
-                  {renderPlacesList()}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="p-4 bg-white rounded-lg shadow">
-              <p className="text-gray-600">Select a location on the map to see its boring score!</p>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
