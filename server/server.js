@@ -37,7 +37,7 @@ async function fetchNearbyLandmarks(latitude, longitude) {
         do {
             const params = {
                 location: `${latitude},${longitude}`,
-                radius: 10000, // 10km in meters
+                radius: 5000, // 5km in meters
                 key: apiKey,
                 type: Array.from(ALLOWED_TYPES).join('|')
             };
@@ -94,9 +94,16 @@ async function fetchNearbyLandmarks(latitude, longitude) {
 
         // Sort places by score before returning
         const sortedPlaces = allPlaces.sort((a, b) => b.score - a.score);
+        // total boring score 
+
+        const totalInterestingScore = allPlaces.reduce((sum, place) => sum +  (100 - place.boringScore), 0)/60;
 
         // Calculate area's total boring score
-        const totalBoringScore = allPlaces.reduce((sum, place) => sum + place.boringScore, 0) / allPlaces.length;
+        var totalBoringScore = 100 - totalInterestingScore;
+
+        if (allPlaces.length == 0) {
+            totalBoringScore = 100;
+        }
 
         return {
             userLocation: {
@@ -151,7 +158,7 @@ function calculateLocationScore(place, userLocation) {
     const ratingsCountScore = Math.min(1, (place.user_ratings_total || 0) / 100);
     
     // Calculate excitement score (weighted average)
-    const excitementScore = (distanceScore * 0.5) + (ratingScore * 0.2) + (ratingsCountScore * 0.3);
+    const excitementScore = (distanceScore * 0.4) + (ratingScore * 0.4) + (ratingsCountScore * 0.2);
     
     // Calculate boring score (inverse of excitement score)
     const boringScore = (1 - excitementScore)*100;

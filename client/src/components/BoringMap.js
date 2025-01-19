@@ -31,7 +31,7 @@ const BoringMap = () => {
   };
 
   const getBoringScoreColor = (score) => {
-    const normalizedScore = Math.min(score / 100, 1);
+    const normalizedScore = Math.min(score / 45, 1);
     if (normalizedScore < 0.2) return 'bg-red-500';
     if (normalizedScore < 0.4) return 'bg-orange-500';
     if (normalizedScore < 0.6) return 'bg-yellow-500';
@@ -40,32 +40,42 @@ const BoringMap = () => {
   };
 
   const renderPlacesList = () => {
-    if (!boringData?.landmarks) return null;
-
-    return boringData.landmarks.slice(0, 5).map((place, index) => (
-      <div key={index} className="p-2 bg-gray-50 rounded">
-        <p className="font-medium">{place.name}</p>
-        <div className="flex items-center space-x-2 text-sm">
-          <div 
-            className={`h-2 w-16 rounded ${getBoringScoreColor(place.boringScore)}`}
-          />
-          <span className="text-gray-600">
-            {place.boringScore.toFixed(1)} boring score
-          </span>
-        </div>
-        <div className="text-sm text-gray-500 mt-1">
-          <p>{place.address}</p>
-          <p>{place.distanceFromUser.toFixed(1)}km away</p>
-        </div>
-      </div>
-    ));
-  };
+    if (!boringData?.landmarks) {
+        return (
+            <div className="p-4 text-center">
+                <p className="text-gray-600">
+                    No interesting places found in this area.
+                    This might be the most boring place ever!
+                </p>
+            </div>
+        );
+    }
+    else {
+        return boringData.landmarks.map((place, index) => (
+            <div key={index} className="p-3 bg-white rounded-lg shadow mb-2">
+              <p className="font-medium text-gray-900">{place.name}</p>
+              <div className="flex items-center space-x-2 text-sm mt-1">
+                <div 
+                  className={`h-2 w-16 rounded ${getBoringScoreColor(place.boringScore)}`}
+                />
+                <span className="text-gray-600">
+                  {place.boringScore.toFixed(1)} boring score
+                </span>
+              </div>
+              <div className="text-sm text-gray-500 mt-1">
+                <p className="line-clamp-1">{place.address}</p>
+                <p>{place.distanceFromUser.toFixed(1)}km away</p>
+              </div>
+            </div>
+          ));
+        };
+    }
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold mb-2">The Most Boring Place</h1>
-        <p className="text-gray-600">Click anywhere on the map to check its boring score!</p>
+        <h1 className="text-2xl font-bold mb-2">The Most Boring Place on Earth</h1>
+        <p className="text-gray-600">click anywhere on the map to check its boring score!</p>
       </div>
 
       {error && (
@@ -84,10 +94,10 @@ const BoringMap = () => {
           )}
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 h-[600px] flex flex-col">
           {loading ? (
             <div className="p-4 bg-white rounded-lg shadow">
-              <p>Loading...</p>
+              <p>are you bored...</p>
             </div>
           ) : boringData ? (
             <>
@@ -114,9 +124,11 @@ const BoringMap = () => {
                 </div>
               </div>
 
-              <div className="p-4 bg-white rounded-lg shadow">
-                <h2 className="text-lg font-semibold mb-2">Most Interesting Places</h2>
-                <div className="space-y-2">
+              <div className="flex-1 bg-white rounded-lg shadow flex flex-col min-h-0">
+                <div className="p-4 border-b">
+                  <h2 className="text-lg font-semibold">most interest places :(</h2>
+                </div>
+                <div className="p-2 flex-1 overflow-y-auto bg-gray-50">
                   {renderPlacesList()}
                 </div>
               </div>

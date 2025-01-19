@@ -1,0 +1,7 @@
+.map-search-box:focus {
+    border-color: #4f46e5;
+  }
+  
+  .map-search-box::placeholder {
+    color: #6b7280;
+  }
