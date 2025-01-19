@@ -51,7 +51,7 @@ const MapComponent = ({ onLocationSelect }) => {
       width: 240px;
       height: 40px;
       padding: 0 12px;
-      border-radius: 4px;
+      border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       font-size: 14px;
       outline: none;
