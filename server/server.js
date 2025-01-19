@@ -2,14 +2,74 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const { MongoClient } = require('mongodb');
 
-
-// Rest of your code...
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// MongoDB Connection URL - add this to your .env file
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+let db;
+
+// Parse area codes file into a mapping
+const fs = require('fs');
+const areaCodeMapping = {};
+const areaCodesContent = fs.readFileSync('area codes.txt', 'utf-8');
+areaCodesContent.split('\n').forEach(line => {
+    const [code, name] = line.trim().split('\t');
+    if (code && name) {
+        areaCodeMapping[code] = name.trim();
+    }
+});
+
+// Connect to MongoDB
+async function connectToMongo() {
+    try {
+        const client = await MongoClient.connect(MONGODB_URI);
+        console.log('Connected to MongoDB');
+        db = client.db('geonames_db');
+        
+        // Create an index on _id field if it doesn't exist
+        await db.collection('province_avg').createIndex({ "_id": 1 });
+    } catch (err) {
+        console.error('MongoDB connection error:', err);
+        process.exit(1);
+    }
+}
+
+// Initialize MongoDB connection
+connectToMongo();
+
 // Enable CORS for all routes
 app.use(cors());
+
+// New endpoint to get province/state scores
+app.get('/api/province-scores', async (req, res) => {
+    try {
+        const scores = await db.collection('province_avg')
+            .find({})
+            .toArray();
+
+        // Convert array to object with province names
+        const formattedScores = {};
+        scores.forEach(score => {
+            const provinceName = areaCodeMapping[score._id];
+            if (provinceName) {
+                formattedScores[provinceName] = score.average_fun_score;
+            }
+        });
+
+        res.json(formattedScores);
+    } catch (error) {
+        console.error('Error fetching province scores:', error);
+        res.status(500).json({
+            error: 'Server error',
+            message: error.message
+        });
+    }
+});
+
+// Rest of your existing code...
 
 // Define allowed place types
 const ALLOWED_TYPES = new Set([

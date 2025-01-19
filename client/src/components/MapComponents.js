@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import provinces from '../provinces.json';
 
 const MapComponent = ({ onLocationSelect }) => {
   const mapRef = useRef(null);
@@ -10,6 +9,21 @@ const MapComponent = ({ onLocationSelect }) => {
   const [error, setError] = useState(null);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [geoJSONLoaded, setGeoJSONLoaded] = useState(false);
+  const [provinceScores, setProvinceScores] = useState({});
+
+  const fetchProvinceScores = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/province-scores');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setProvinceScores(data);
+    } catch (error) {
+      console.error('Error fetching province scores:', error);
+      setError('Failed to load province scores');
+    }
+  };
 
   const getColorForScore = (score) => {
     if (score >= 80) return '#52489C'; // purple
@@ -63,7 +77,7 @@ const MapComponent = ({ onLocationSelect }) => {
         // Style the GeoJSON layer
         boundaryLayerRef.current.setStyle((feature) => {
           const provinceName = feature.getProperty('name');
-          const score = provinces[provinceName] || 0;
+          const score = provinceScores[provinceName] || 0;
     
           return {
             fillColor: getColorForScore(score),
@@ -90,7 +104,7 @@ const MapComponent = ({ onLocationSelect }) => {
         const infoWindow = new window.google.maps.InfoWindow();
         boundaryLayerRef.current.addListener('click', (event) => {
           const provinceName = event.feature.getProperty('name');
-          const score = provinces[provinceName] || 0;
+          const score = provinceScores[provinceName] || 0;
     
           infoWindow.setContent(
             `<div class="p-2">
@@ -116,11 +130,17 @@ const MapComponent = ({ onLocationSelect }) => {
     }
   };
 
-  useEffect(() => {
-    if (mapInstanceRef.current) {
-      loadGeoJsonLayer();
-    }
-  }, [showHeatmap]);
+    // Add useEffect to fetch province scores when component mounts
+    useEffect(() => {
+      fetchProvinceScores();
+    }, []);
+    
+    // Modified useEffect to reload GeoJSON layer when provinceScores change
+    useEffect(() => {
+      if (mapInstanceRef.current && Object.keys(provinceScores).length > 0) {
+        loadGeoJsonLayer();
+      }
+    }, [showHeatmap, provinceScores]);
 
   useEffect(() => {
     const script = document.createElement('script');
